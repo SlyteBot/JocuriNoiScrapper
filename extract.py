@@ -4,6 +4,8 @@ from game import Game
 from os.path import exists
 
 
+# TODO A WHOLE ASS REFACTORING FUCKER
+
 def get_response_page(url, save=False):
     response = requests.get(url)
     if response.ok == True:

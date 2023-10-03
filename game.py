@@ -9,4 +9,4 @@ class Game:
     publisher: str
     developer: str
     platform: str
-    genres: list[str]
+    genres: [str]
