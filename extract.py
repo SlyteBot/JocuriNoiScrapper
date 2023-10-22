@@ -2,89 +2,80 @@ import requests
 from bs4 import BeautifulSoup
 from game import Game
 from os.path import exists
+import threading
+from pathlib import Path
 
 
-# TODO A WHOLE ASS REFACTORING FUCKER
+class Extractor:
+    def __init__(self, response: requests.Response, id_name: str, thumbnail_link: str, cover_dir_name: str, thumbnail_dir_name: str) -> None:
+        self.response = response
+        self.id_name = id_name
+        self.cover_dir_name = cover_dir_name
+        self.thumbnail_dir_name = thumbnail_dir_name
+        self.thumbnail_link = thumbnail_link
 
-def get_response_page(url, save=False):
-    response = requests.get(url)
-    if response.ok == True:
-        if save == True:
-            with open("test.html", "w", encoding="utf-8") as f:
-                f.write(response.text)
-        return response
-    else:
-        return None
+    def get_game_name_platform(self, text: str):
+        name, platform = "", ""
 
+        first_part, second_part = "Joc", "pentru"
+        first_index, last_index = text.find("Joc"), text.find("pentru")
 
-def get_game_name_platform(text: str):
-    name, platform = "", ""
+        name_start, name_end = first_index + len(first_part), last_index
+        platform_start, platform_end = last_index + len(second_part), len(text)
 
-    first_part, second_part = "Joc", "pentru"
-    first_index, last_index = text.find("Joc"), text.find("pentru")
+        name = text[name_start:name_end].strip()
+        platform = text[platform_start:platform_end].strip()
 
-    name_start, name_end = first_index + len(first_part), last_index
-    platform_start, platform_end = last_index + len(second_part), len(text)
+        return name, platform
 
-    name = text[name_start:name_end].strip()
-    platform = text[platform_start:platform_end].strip()
+    def get_price(self, soup: BeautifulSoup):
+        text = soup.find('div', class_="pret").text
+        price_index = text.find('lei')
+        price = text[:price_index].strip()
+        return price
 
-    return name, platform
+    def get_other_relative_info(self, soup: BeautifulSoup):
+        text = soup.find('table', class_="table table-striped")
 
+        list_data = [list(filter(lambda a: a != '', data.text.split('\n')))
+                     for data in text.find_all('td')]
+        platform_index, publisher_index, developer_index, gen_index, date_index = list_data.index(['Platforma']), list_data.index(
+            ['Producator']), list_data.index(['Dezvoltator']), list_data.index(['Genuri']), list_data.index(['Data lansare'])
 
-def get_price(soup: BeautifulSoup):
-    text = soup.find('div', class_="pret").text
-    price_index = text.find('lei')
-    price = text[:price_index].strip()
-    return price
+        publisher = list_data[publisher_index+1][0]
+        developer = list_data[developer_index+1][0]
+        genres = list_data[gen_index+1]
+        date = list_data[date_index+1][0]
+        return publisher, developer, genres, date
 
+    def download_main_cover(self, soup: BeautifulSoup):
+        image_link = soup.find('img', class_="main-cover")['src']
+        name = str(self.id_name)
+        with open(f'{self.cover_dir_name}/{name}.webp', 'wb') as f:
+            try:
+                f.write(requests.get(image_link).content)
+            except requests.exceptions.HTTPError:
+                print(f'Couldn\'t get cover for {name}')
 
-def get_other_relative_info(soup: BeautifulSoup):
-    text = soup.find('table', class_="table table-striped")
+    def download_thumbnail(self):
+        name = str(self.id_name)
+        with open(f'{self.thumbnail_dir_name}/{name}.webp', 'wb') as f:
+            try:
+                f.write(requests.get(self.thumbnail_link).content)
+            except requests.exceptions.HTTPError:
+                print(f'Couldn\'t get cover for {name}')
 
-    list_data = [list(filter(lambda a: a != '', data.text.split('\n')))
-                 for data in text.find_all('td')]
-    platform_index, publisher_index, developer_index, gen_index, date_index = list_data.index(['Platforma']), list_data.index(
-        ['Producator']), list_data.index(['Dezvoltator']), list_data.index(['Genuri']), list_data.index(['Data lansare'])
+    def get_info_from_response(self):
 
-    publisher = list_data[publisher_index+1][0]
-    developer = list_data[developer_index+1][0]
-    genres = list_data[gen_index+1]
-    date = list_data[date_index+1][0]
-    return publisher, developer, genres, date
+        text = self.response.text
+        soup = BeautifulSoup(text, 'html.parser')
+        name, platform = self.get_game_name_platform(soup.title.text)
+        price = self.get_price(soup)
+        publisher, developer, genres, date = self.get_other_relative_info(soup)
+        threading.Thread(target=self.download_main_cover,
+                         args=[soup]).start()
+        threading.Thread(target=self.download_thumbnail, args=[]).start()
+        info = Game(self.id_name, name, date, price, publisher,
+                    developer, platform, genres)
 
-
-def download_main_cover(soup: BeautifulSoup):
-    image_link = soup.find('img', class_="main-cover")['src']
-    name = "TEST"
-    with open(f'{name}.webp', 'wb') as f:
-        try:
-            f.write(requests.get(image_link).content)
-        except requests.exceptions.HTTPError:
-            print(f'Couldn\'t get image {name}')
-
-
-def get_info_from_response(response: requests.Response, test=True):
-
-    text = response.text
-    soup = BeautifulSoup(text, 'html.parser')
-    name, platform = get_game_name_platform(soup.title.text)
-    price = get_price(soup)
-    publisher, developer, genres, date = get_other_relative_info(soup)
-    # TODO Make image downloading threaded
-    download_main_cover(soup)
-    info = Game(name, date, price, publisher, developer, platform, genres)
-
-    print(info)
-    # TODO put relevant info in a class and upload it to SQL
-
-
-if __name__ == '__main__':
-    url = "https://www.jocurinoi.ro/grand-theft-auto-v-xbox-360"
-    response = None
-    test = True
-    save = False
-    if exists('test.html') == False or test == True:
-        response = get_response_page(url, save)
-        print("Response generated!")
-    get_info_from_response(response, test)
+        return info
