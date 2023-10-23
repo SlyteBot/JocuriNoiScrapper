@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Game:
-    id: int
+    id_name: str
     name: str
     date: str
     price: float
