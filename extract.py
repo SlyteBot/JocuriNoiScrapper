@@ -15,7 +15,7 @@ class Extractor:
         self.thumbnail_link = thumbnail_link
 
     def get_game_name_platform(self, text: str):
-        name, platform = "", ""
+        name = ""
 
         first_part, second_part = "Joc", "pentru"
         first_index, last_index = text.find("Joc"), text.find("pentru")
@@ -24,9 +24,9 @@ class Extractor:
         platform_start, platform_end = last_index + len(second_part), len(text)
 
         name = text[name_start:name_end].strip()
-        platform = text[platform_start:platform_end].strip()
+        # platform = text[platform_start:platform_end].strip()
 
-        return name, platform
+        return name
 
     def get_price(self, soup: BeautifulSoup):
         text = soup.find('div', class_="pret").text
@@ -41,12 +41,12 @@ class Extractor:
                      for data in text.find_all('td')]
         platform_index, publisher_index, developer_index, gen_index, date_index = list_data.index(['Platforma']), list_data.index(
             ['Producator']), list_data.index(['Dezvoltator']), list_data.index(['Genuri']), list_data.index(['Data lansare'])
-
+        platform = list_data[platform_index+1][0]
         publisher = list_data[publisher_index+1][0]
         developer = list_data[developer_index+1][0]
         genres = list_data[gen_index+1]
         date = list_data[date_index+1][0]
-        return publisher, developer, genres, date
+        return platform, publisher, developer, genres, date
 
     def download_main_cover(self, soup: BeautifulSoup):
         image_link = soup.find('img', class_="main-cover")['src']
@@ -69,9 +69,10 @@ class Extractor:
 
         text = self.response.text
         soup = BeautifulSoup(text, 'html.parser')
-        name, platform = self.get_game_name_platform(soup.title.text)
+        name = self.get_game_name_platform(soup.title.text)
         price = self.get_price(soup)
-        publisher, developer, genres, date = self.get_other_relative_info(soup)
+        platform, publisher, developer, genres, date = self.get_other_relative_info(
+            soup)
         threading.Thread(target=self.download_main_cover,
                          args=[soup]).start()
         threading.Thread(target=self.download_thumbnail, args=[]).start()

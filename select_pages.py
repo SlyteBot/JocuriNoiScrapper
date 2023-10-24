@@ -39,13 +39,13 @@ class Page:
     def start_extract(self, link: str, thumbnail_link: str, id_name: str):
         response = self.get_response_page(link)
         if response == None:
-            return
+            return None
         instance_extract = Extractor(response=response, id_name=id_name, thumbnail_link=thumbnail_link,
                                      cover_dir_name=self.cover_dir_name, thumbnail_dir_name=self.thumbnail_dir_name)
-        print(instance_extract.get_info_from_response())
+        return instance_extract.get_info_from_response()
 
-    def get_all_links(self):
-
+    def get_all_games(self):
+        games = []
         response = self.get_response_page(self.link)
         if response == None:
             return
@@ -60,10 +60,13 @@ class Page:
             img_name.append(tag['href'].rsplit('/', 1)[-1])
             image_links.append(tag.find('img')['src'])
         for page_link, thumbnail_link, id_name in zip(product_links, image_links, img_name):
-            self.start_extract(page_link, thumbnail_link, id_name)
+            result = self.start_extract(page_link, thumbnail_link, id_name)
+            if result is not None:
+                games.append(result)
+        return games
 
 
 if __name__ == "__main__":
-    link = "https://www.jocurinoi.ro/ps5&page=1"
+    link = "https://www.jocurinoi.ro/xbox-series&page=1"
     instance = Page(link)
-    instance.get_all_links()
+    print(instance.get_all_games())
