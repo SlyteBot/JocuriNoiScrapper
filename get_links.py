@@ -18,6 +18,7 @@ class ThreadLink(Thread):
 class Links:
     def __init__(self, links: [str]) -> None:
         self.links = links
+        self.generate_links()
 
     def generate_links(self, number_of_pages: int = 5):
         self.scraping_links = []
@@ -38,7 +39,7 @@ class Links:
             self.threads.append(thread)
         for thread in self.threads:
             games += thread.join()
-        print(games)
+        return games
 
 
 if __name__ == "__main__":

@@ -5,17 +5,24 @@ import datetime
 
 class SQL:
 
+    def __init__(self, host: str, user: str, database: str, password: str) -> None:
+        self.host = host
+        self.user = user
+        self.database = database
+        self.password = password
+
     def connection(self):
         try:
             return connect(
-                host="localhost",
-                user="root",
-                database="webshop"
+                host=self.host,
+                password=self.password,
+                user=self.user,
+                database=self.database
             )
         except Error as e:
             print(e)
 
-    def extract_genres(self, games: list[Game]):
+    def extract_genres(self, games: [Game]):
         genres = []
         for game in games:
             for genre in game.genres:
@@ -31,7 +38,7 @@ class SQL:
             connection.commit()
             cursor.close()
 
-    def insert_prodcuts(self, games: list[Game]):
+    def insert_prodcuts(self, games: [Game]):
 
         with self.connection() as connection:
             cursor = connection.cursor()
