@@ -16,9 +16,9 @@ class ThreadLink(Thread):
 
 
 class Links:
-    def __init__(self, links: [str]) -> None:
+    def __init__(self, links: [str], number_of_pages: int = 5) -> None:
         self.links = links
-        self.generate_links()
+        self.generate_links(number_of_pages)
 
     def generate_links(self, number_of_pages: int = 5):
         self.scraping_links = []
