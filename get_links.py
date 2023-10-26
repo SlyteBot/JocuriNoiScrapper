@@ -1,5 +1,7 @@
 from threading import Thread
 from select_pages import Page
+import time
+import random
 
 
 class ThreadLink(Thread):
@@ -33,10 +35,13 @@ class Links:
         self.threads = []
         games = []
         for link in self.scraping_links:
+            print(f"Starting thread for {link}")
             instance = Page(link)
             thread = ThreadLink(target=instance.get_all_games, args=[])
             thread.start()
             self.threads.append(thread)
+            time.sleep(random.randint(60, 70))
+            print(f"Wait over for {link}")
         for thread in self.threads:
             games += thread.join()
         return games

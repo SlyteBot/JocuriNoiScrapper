@@ -13,14 +13,16 @@ class SQL:
 
     def connection(self):
         try:
-            return connect(
+            connection = connect(
                 host=self.host,
                 password=self.password,
                 user=self.user,
                 database=self.database
             )
-        except Error as e:
-            print(e)
+            print("MySQL Database connection successful")
+            return connection
+        except Error as err:
+            raise err
 
     def extract_genres(self, games: [Game]):
         genres = []
@@ -77,11 +79,3 @@ class SQL:
 
             connection.commit()
             cursor.close()
-
-
-if __name__ == '__main__':
-    instance = SQL()
-    # instance.extract_genres([])
-    instance.insert_prodcuts([Game("a", "a", "2020-09-28", 145.6,
-                                   "publisher", "dev", "PS5", ["2D", "PLATFORMER"]), Game("b", "a", "2020-09-28", 145.6,
-                                                                                          "publisher", "dev", "PS5", ["2D", "PLATFORMER"])])
