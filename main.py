@@ -20,17 +20,17 @@ def main():
     load_dotenv()
 
     host = getenv("HOST")
-    user = getenv("USERNAME")
+    user = getenv("USERNAMEDB")
     database = getenv("DATABASE")
     password = getenv("PASSWORD")
 
     filename = "links.txt"
     links = []
-
     SQL_instance = SQL(host, user, database, password)
 
     try:
         SQL_instance.connection()
+        print("SQL Server connection successful!")
     except Error as e:
         print("Connection to server failed.")
         return
@@ -39,11 +39,8 @@ def main():
         for link in f:
             links.append(link.strip())
 
-    link_instance = Links(links)
-    games = link_instance.threading_games()
-
-    SQL_instance.extract_genres(games)
-    SQL_instance.insert_prodcuts(games)
+    link_instance = Links(links, SQLconnection=SQL_instance, number_of_pages=3)
+    link_instance.threading_games()
 
 
 if __name__ == "__main__":

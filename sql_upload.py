@@ -19,22 +19,30 @@ class SQL:
                 user=self.user,
                 database=self.database
             )
-            print("MySQL Database connection successful")
             return connection
         except Error as err:
             raise err
 
     def extract_genres(self, games: [Game]):
-        genres = []
-        for game in games:
-            for genre in game.genres:
-                if genre not in genres:
-                    genres.append(genre)
-        add_genre = ("INSERT INTO genres"
-                     "(genre_name)"
-                     "VALUES (%s);")
         with self.connection() as connection:
             cursor = connection.cursor()
+            select_genres = ("SELECT genre_name FROM `genres`")
+
+            cursor.execute(select_genres)
+            genres_exist = []
+            genres = []
+            for genre_name in cursor:
+                genres_exist.append(genre_name[0].strip())
+            genres = []
+            for game in games:
+                for genre in game.genres:
+                    value = genre.strip()
+                    if value not in genres_exist and value not in genres:
+                        genres.append(value)
+            add_genre = ("INSERT INTO genres"
+                         "(genre_name)"
+                         "VALUES (%s);")
+
             for genre in genres:
                 cursor.execute(add_genre, [genre])
             connection.commit()
@@ -65,17 +73,19 @@ class SQL:
                                  )
             for game in games:
                 date_split = game.date.split('-')
-                product_data = (game.id_name, game.name, datetime.date(
-                    int(date_split[0]), int(date_split[1]), int(date_split[2])), game.price, game.publisher, game.developer, platforms[game.platform])
-                cursor.execute(add_product, product_data)
-                connection.commit()
-
-                product_id = cursor.lastrowid
-
-                for genre in game.genres:
-                    product_genre_data = (product_id, genres[genre])
-                    cursor.execute(add_product_genre, product_genre_data)
+                try:
+                    product_data = (game.id_name, game.name, datetime.date(
+                        int(date_split[0]), int(date_split[1]), int(date_split[2])), game.price, game.publisher, game.developer, platforms[game.platform])
+                    cursor.execute(add_product, product_data)
                     connection.commit()
 
+                    product_id = cursor.lastrowid
+
+                    for genre in game.genres:
+                        product_genre_data = (product_id, genres[genre])
+                        cursor.execute(add_product_genre, product_genre_data)
+                        connection.commit()
+                except KeyError as e:
+                    pass
             connection.commit()
             cursor.close()

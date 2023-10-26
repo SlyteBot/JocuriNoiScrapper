@@ -36,7 +36,7 @@ class Page:
 
     def get_response_page(self, url):
         try:
-            response = requests.get(url, proxies=self.get_proxy())
+            response = requests.get(url)
 
             # if save == True:
             #    with open("test.html", "w", encoding="utf-8") as f:
@@ -73,6 +73,8 @@ class Page:
         product_links = []
         image_links = []
         img_name = []
+
+        counter = 3
         for tag in links:
             product_links.append(tag['href'])
             img_name.append(tag['href'].rsplit('/', 1)[-1])
@@ -80,10 +82,11 @@ class Page:
         for page_link, thumbnail_link, id_name in zip(product_links, image_links, img_name):
             print(f"Extracting for {id_name}")
             result = self.start_extract(page_link, thumbnail_link, id_name)
-            time.sleep(random.randint(25, 35))
             print(f"Done for {id_name}")
+
             if result is not None:
                 games.append(result)
+            time.sleep(random.randint(3, 7))
         return games
 
 
